@@ -9,7 +9,6 @@ public class PaymentMapper {
         payment.getUser().getId(),
         payment.getAmount(),
         payment.getStatus(),
-        payment.getPaymentDate(),
-        payment.getSubscription());
+        payment.getPaymentDate());
         }
 }

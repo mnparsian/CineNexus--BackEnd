@@ -1,6 +1,7 @@
 package com.cinenexus.backend.configuration;
 
 import com.cinenexus.backend.dto.payment.PaymentMapper;
+import com.cinenexus.backend.dto.subscription.SubscriptionMapper;
 import com.cinenexus.backend.model.payment.Payment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,5 +16,8 @@ public class AppConfig {
 
     @Bean public PaymentMapper paymentMapper(){
         return new PaymentMapper();
+    }
+    @Bean public SubscriptionMapper subscriptionMapper(){
+        return new SubscriptionMapper();
     }
 }

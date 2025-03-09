@@ -35,5 +35,5 @@ public class Subscription {
     private SubscriptionType type; // نوع اشتراک (ماهانه، سالانه و ...)
 
     @Enumerated(EnumType.STRING)
-    private SubscriptionStatus status; // وضعیت اشتراک (ACTIVE, EXPIRED, PENDING_PAYMENT)
+    private SubscriptionStatus status = SubscriptionStatus.PENDING_PAYMENT; // وضعیت اشتراک (ACTIVE, EXPIRED, PENDING_PAYMENT)
 }

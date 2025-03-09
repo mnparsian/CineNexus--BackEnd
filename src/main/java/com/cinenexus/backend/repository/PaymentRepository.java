@@ -3,4 +3,8 @@ package com.cinenexus.backend.repository;
 import com.cinenexus.backend.model.payment.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PaymentRepository extends JpaRepository<Payment,Long> {}
+import java.util.Optional;
+
+public interface PaymentRepository extends JpaRepository<Payment,Long> {
+    public Optional<Payment> findByPaypalPaymentId(String papalId);
+}

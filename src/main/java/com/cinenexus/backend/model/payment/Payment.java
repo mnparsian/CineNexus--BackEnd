@@ -31,4 +31,9 @@ public class Payment {
 
     @OneToOne(mappedBy = "payment")
     private Subscription subscription; // اشتراک مربوط به این پرداخت
+
+    @Column(unique = true)
+    private String paypalPaymentId;
+
+
 }

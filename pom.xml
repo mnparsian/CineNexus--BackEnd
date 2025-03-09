@@ -78,8 +78,14 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-messaging</artifactId>
             <version>6.2.3</version>  <!-- 🔥 مشخص کردن نسخه هماهنگ -->
-
         </dependency>
+
+        <dependency>
+            <groupId>com.paypal.sdk</groupId>
+            <artifactId>rest-api-sdk</artifactId>
+            <version>1.14.0</version>
+        </dependency>
+
 
         <!--		<dependency>-->
         <!--			<groupId>com.fasterxml.jackson.core</groupId>-->
