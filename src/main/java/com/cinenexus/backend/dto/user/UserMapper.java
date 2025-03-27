@@ -66,17 +66,33 @@ public class UserMapper {
     user.setStatus(userStatus);
     user.setBirthday(dto.getBirthday());
 
-    Country country =
-        countryRepository
-            .findById(dto.getCountry_id())
-            .orElseThrow(() -> new RuntimeException("Country Not Found!"));
-    user.setCountry(country);
+    if(dto.getCountry_id() != null){
+      Country country =
+              countryRepository
+                      .findById(dto.getCountry_id())
+                      .orElseThrow(() -> new RuntimeException("Country Not Found!"));
+      user.setCountry(country);
+    }
+    else {
+      Country country = countryRepository.findById(1L).orElseThrow(() -> new RuntimeException("Country Not Found!"));
+      user.setCountry(country);
+    }
 
-    Language language =
-        languageRepository
-            .findById(dto.getPreferredLanguage_id())
-            .orElseThrow(() -> new RuntimeException("Language not found!"));
-    user.setPreferredLanguage(language);
+if(dto.getPreferredLanguage_id() != null){
+  Language language =
+          languageRepository
+                  .findById(dto.getPreferredLanguage_id())
+                  .orElseThrow(() -> new RuntimeException("Language not found!"));
+  user.setPreferredLanguage(language);
+}
+else{
+  Language language =
+          languageRepository
+                  .findById(1L)
+                  .orElseThrow(() -> new RuntimeException("Language not found!"));
+  user.setPreferredLanguage(language);
+}
+
 
     user.setPhoneNumber(dto.getPhoneNumber());
 

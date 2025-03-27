@@ -258,12 +258,12 @@ public class TMDBService {
 
     public void fetchAndSaveAllMedia() {
 
-        final int MAX_ITEMS_PER_CATEGORY = 500;
+        final int MAX_ITEMS_PER_CATEGORY = 300;
         int processedItemCount = 0;
 
         List<String> categories = List.of(
-                "movie/popular","tv/popular", "movie/top_rated", "movie/upcoming", "tv/top_rated","tv/on_the_air", "tv/top_rated", "tv/airing_today",
-                 "movie/now_playing"
+                "tv/popular", "movie/top_rated", "movie/upcoming", "tv/top_rated","tv/on_the_air", "tv/top_rated", "tv/airing_today",
+                 "movie/now_playing","movie/popular"
         );
 
         Set<String> processedCategories = new HashSet<>();
@@ -294,7 +294,7 @@ public class TMDBService {
                             Long tmdbId = item.get("id").asLong();
                             String mediaType = category.startsWith("movie") ? "movie" : "tv";
 
-                            // چک کنیم آیا این رسانه قبلاً در دیتابیس هست
+
                             if (mediaRepository.existsByTmdbId(tmdbId)) {
                                 System.out.println("⚠️ Skipping media (already exists): " + tmdbId);
                                 continue;

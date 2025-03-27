@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/api/payments/**",
                                 "/api/users/image/**",
                                 "/api/users/profile/**",
+                                "/api/users/search/**",
                                 "/api/paypal/**",
                                 "/api/reviews-comments/**"
                         ).hasAnyRole("USER", "ADMIN")
