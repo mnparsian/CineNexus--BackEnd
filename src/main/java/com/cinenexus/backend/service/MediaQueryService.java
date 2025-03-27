@@ -1,6 +1,8 @@
 package com.cinenexus.backend.service;
 
 import com.cinenexus.backend.model.media.Media;
+import com.cinenexus.backend.model.media.MediaGenre;
+import com.cinenexus.backend.repository.MediaGenreRepository;
 import com.cinenexus.backend.repository.MediaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,11 +20,13 @@ import java.util.Optional;
 public class MediaQueryService {
 
     private final MediaRepository mediaRepository;
+    private final MediaGenreRepository mediaGenreRepository;
 
     public Page<Media> filterMedia(
             Optional<String> title,
             Optional<String> category,
             Optional<String> mediaType,
+            Optional<List<MediaGenre>> mediaGenres,
             Optional<Double> minVoteAverage,
             Optional<Double> maxVoteAverage,
             Optional<LocalDate> releasedAfter,
@@ -44,6 +48,10 @@ public class MediaQueryService {
         if (mediaType.isPresent()) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.get("mediaType").get("name"), mediaType.get()));
+        }
+        if(mediaGenres.isPresent()){
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("mediaGenres"), mediaGenres.get()));
         }
 
         if (minVoteAverage.isPresent()) {
@@ -93,5 +101,9 @@ public class MediaQueryService {
     public Page<Media> getMediaByPopularity(int page, int size) {
         return mediaRepository.findAllByOrderByPopularityDesc(PageRequest.of(page, size));
     }
+    public Page<Media> getMediaByGenre(Long genreId,int page,int size) {
+        return mediaGenreRepository.findMediaByGenreId(genreId,PageRequest.of(page,size));
+    }
+
 }
 

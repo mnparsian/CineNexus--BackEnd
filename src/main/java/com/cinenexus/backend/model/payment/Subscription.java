@@ -26,14 +26,14 @@ public class Subscription {
 
     @OneToOne
     @JoinColumn(name = "payment_id", nullable = false)
-    private Payment payment; // پرداخت مرتبط با این اشتراک
+    private Payment payment;
 
     private LocalDateTime startDate;
     private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
-    private SubscriptionType type; // نوع اشتراک (ماهانه، سالانه و ...)
+    private SubscriptionType type;
 
     @Enumerated(EnumType.STRING)
-    private SubscriptionStatus status = SubscriptionStatus.PENDING_PAYMENT; // وضعیت اشتراک (ACTIVE, EXPIRED, PENDING_PAYMENT)
+    private SubscriptionStatus status = SubscriptionStatus.PENDING_PAYMENT;
 }

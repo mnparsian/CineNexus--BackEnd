@@ -34,5 +34,11 @@ public class ChatMessage {
     private LocalDateTime editedAt;
     private LocalDateTime deletedAt;
 
+    public ChatMessage(User sender, ChatRoom chatRoom, String content, LocalDateTime sentAt) {
+        this.sender = sender;
+        this.chatRoom = chatRoom;
+        this.content = content;
+        this.sentAt = sentAt;
+    }
 }
 

@@ -1,14 +1,31 @@
 package com.cinenexus.backend.service;
 
+import com.cinenexus.backend.dto.comment.CommentMapper;
+import com.cinenexus.backend.dto.comment.CommentRequestDTO;
+import com.cinenexus.backend.dto.comment.CommentResponseDTO;
+import com.cinenexus.backend.dto.commentlike.CommentLikeMapper;
+import com.cinenexus.backend.dto.commentlike.CommentLikeResponseDTO;
+import com.cinenexus.backend.dto.review.ReviewLikeResponseDTO;
+import com.cinenexus.backend.dto.review.ReviewMapper;
+import com.cinenexus.backend.dto.review.ReviewRequestDTO;
+import com.cinenexus.backend.dto.review.ReviewResponseDTO;
+import com.cinenexus.backend.dto.user.UserMapper;
+import com.cinenexus.backend.dto.user.UserResponseDTO;
+import com.cinenexus.backend.enumeration.RoleType;
 import com.cinenexus.backend.model.commentReview.*;
 import com.cinenexus.backend.model.media.Media;
 import com.cinenexus.backend.model.user.User;
 import com.cinenexus.backend.repository.*;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 @Service
 public class ReviewCommentService {
@@ -19,6 +36,12 @@ public class ReviewCommentService {
   private final CommentLikeRepository commentLikeRepository;
   private final UserRepository userRepository;
   private final MediaRepository mediaRepository;
+  private final ReviewMapper reviewMapper;
+  private final CommentMapper commentMapper;
+  private final CommentLikeMapper commentLikeMapper;
+  private final UserMapper userMapper;
+  private final ReviewLikeResponseDTO reviewLikeResponseDTO;
+
 
   public ReviewCommentService(
       ReviewRepository reviewRepository,
@@ -26,46 +49,57 @@ public class ReviewCommentService {
       ReviewLikeRepository reviewLikeRepository,
       CommentLikeRepository commentLikeRepository,
       UserRepository userRepository,
-      MediaRepository mediaRepository) {
+      MediaRepository mediaRepository,
+      ReviewMapper reviewMapper,
+      CommentMapper commentMapper,
+      CommentLikeMapper commentLikeMapper,
+      UserMapper userMapper,ReviewLikeResponseDTO reviewLikeResponseDTO) {
     this.reviewRepository = reviewRepository;
     this.commentRepository = commentRepository;
     this.reviewLikeRepository = reviewLikeRepository;
     this.commentLikeRepository = commentLikeRepository;
     this.userRepository = userRepository;
     this.mediaRepository = mediaRepository;
+    this.reviewMapper = reviewMapper;
+    this.commentMapper = commentMapper;
+    this.commentLikeMapper = commentLikeMapper;
+    this.userMapper = userMapper;
+    this.reviewLikeResponseDTO = reviewLikeResponseDTO;
   }
 
   // Review Methods
-  public Review createReview(Review review) {
-    // دریافت کامل کاربر از دیتابیس
-    User user =
-        userRepository
-            .findById(review.getUser().getId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+  public ReviewResponseDTO createReview(ReviewRequestDTO dto) {
 
-    // دریافت کامل فیلم/سریال از دیتابیس
-    Media media =
-        mediaRepository
-            .findById(review.getMedia().getId())
-            .orElseThrow(() -> new RuntimeException("Media not found"));
+    Review review = reviewMapper.toEntity(dto);
 
-    // تنظیم اطلاعات دریافت‌شده
-    review.setUser(user);
-    review.setMedia(media);
-    review.setCreatedAt(LocalDateTime.now());
+    review = reviewRepository.save(review);
 
-    return reviewRepository.save(review);
+    return reviewMapper.toDTO(review);
   }
 
-  public Optional<Review> getReviewById(Long id) {
-    return reviewRepository.findById(id);
+  public ReviewResponseDTO getReviewById(Long id) {
+    Review review = reviewRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Review Not found"));
+    return reviewMapper.toDTO(review);
+
   }
 
-  public List<Review> getReviewsByMedia(Long mediaId) {
-    return reviewRepository.findByMediaId(mediaId);
+  public List<ReviewResponseDTO> getAllReviewsByUserId(Long userId){
+    User user = userRepository.findById(userId).orElseThrow(()->new EntityNotFoundException("user not found"));
+    List<Review> reviews = reviewRepository.findAllByUser(user);
+    return reviews.stream().map(reviewMapper::toDTO).toList();
   }
 
-  public Review updateReview(Long id, String content, Double rating) {
+  public List<ReviewResponseDTO> getReviewsByMedia(Long mediaId) {
+    List<Review> reviews = reviewRepository.findByMediaId(mediaId);
+    return reviews.stream().map(reviewMapper::toDTO).toList();
+  }
+  public UserResponseDTO getWriterByReviewId(Long id){
+    Review review = reviewRepository.findById(id).orElseThrow(()->new EntityNotFoundException("Review not found"));
+    User writer = review.getUser();
+    return userMapper.toDTO(writer);
+  }
+
+  public ReviewResponseDTO updateReview(Long id, String content, Double rating) {
     return reviewRepository
         .findById(id)
         .map(
@@ -73,59 +107,111 @@ public class ReviewCommentService {
               review.setContent(content);
               review.setRating(rating);
               review.setUpdatedAt(LocalDateTime.now());
-              return reviewRepository.save(review);
+              Review updatedReview = reviewRepository.save(review);
+              return reviewMapper.toDTO(updatedReview);
             })
         .orElseThrow(() -> new RuntimeException("Review not found"));
   }
 
-  public void deleteReview(Long id) {
-    reviewRepository.deleteById(id);
-  }
-
-  // Comment Methods
-  public Comment createComment(Comment comment) {
-    // دریافت کامل کاربر از دیتابیس
-    User user = userRepository.findById(comment.getUser().getId())
+  @Transactional
+  public void deleteReview(Long id, UserDetails userDetails) {
+    User currentUser = userRepository.findByUsername(userDetails.getUsername())
             .orElseThrow(() -> new RuntimeException("User not found"));
 
-    // دریافت کامل نقد از دیتابیس
-    Review review = reviewRepository.findById(comment.getReview().getId())
-            .orElseThrow(() -> new RuntimeException("Review not found"));
+    Review review = reviewRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Review not found"));
 
-    // تنظیم اطلاعات دریافت‌شده
-    comment.setUser(user);
-    comment.setReview(review);
-    comment.setCreatedAt(LocalDateTime.now());
 
-    return commentRepository.save(comment);
+    if (currentUser.getRole().name().equals("ADMIN")) {
+      commentRepository.deleteAllByReview(review);
+      reviewRepository.deleteById(id);
+      return;
+    }
+
+
+    if (!currentUser.getId().equals(review.getUser().getId())) {
+      throw new AccessDeniedException("You are not allowed to delete this review.");
+    }
+    commentRepository.deleteAllByReview(review);
+    reviewRepository.delete(review);
+  }
+
+  //find all likes By review id
+
+  public List<ReviewLikeResponseDTO> getAllLikesByReview_Id(Long reviewId){
+    List<ReviewLike> reviewLikes = reviewLikeRepository.findByReview_Id(reviewId);
+    return reviewLikes.stream().map(reviewLikeResponseDTO::toDTO).toList();
   }
 
 
-  public List<Comment> getCommentsByReview(Long reviewId) {
-    return commentRepository.findByReviewId(reviewId);
+
+  // Comment Methods
+  public CommentResponseDTO createComment(CommentRequestDTO dto) {
+   Comment comment = commentMapper.toEntity(dto);
+    comment = commentRepository.save(comment);
+    return commentMapper.toDTO(comment);
   }
 
-  public Comment updateComment(Long id, String content) {
-    return commentRepository
-        .findById(id)
-        .map(
-            comment -> {
-              comment.setContent(content);
-              comment.setUpdatedAt(LocalDateTime.now());
-              return commentRepository.save(comment);
-            })
-        .orElseThrow(() -> new RuntimeException("Comment not found"));
+  public List<CommentResponseDTO> getCommentsByReview(Long reviewId) {
+   List <Comment> foundComment = commentRepository.findByReviewId(reviewId);
+    return foundComment.stream().map(commentMapper::toDTO).toList();
   }
 
-  public void deleteComment(Long id) {
-    commentRepository.deleteById(id);
+  public Comment getCommentById(Long id){
+    return commentRepository.findByIdNative(id).orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+
+  }
+  @Transactional
+  public CommentResponseDTO updateComment(long id, String content, UserDetails userDetails) {
+
+    Optional<Comment> optionalComment = commentRepository.findById(id);
+    if(optionalComment.isEmpty()) {
+      throw new RuntimeException("Comment with id " + id + " not found in database!");
+    }
+    Comment updatedComment = optionalComment.get();
+    User currentUser = userRepository.findByUsername(userDetails.getUsername())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    if (!updatedComment.getUser().getId().equals(currentUser.getId()) && !currentUser.getRole().name().equals("ADMIN")) {
+      throw new AccessDeniedException("You are not allowed to edit this comment.");
+    }
+
+    updatedComment.setContent(content);
+    updatedComment.setUpdatedAt(LocalDateTime.now());
+    return commentMapper.toDTO(updatedComment);
+  }
+
+@Transactional
+  public void deleteComment(Long id, UserDetails userDetails) {
+
+    User currentUser = userRepository.findByUsername(userDetails.getUsername())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    Comment comment = commentRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("comment not found"));
+
+
+    if (currentUser.getRole().name().equals("ADMIN")) {
+      commentLikeRepository.deleteByCommentId(id);
+      commentRepository.deleteById(id);
+      return;
+    }
+
+
+    if (!currentUser.getId().equals(comment.getUser().getId())) {
+      throw new AccessDeniedException("You are not allowed to delete this comment.");
+    }
+  commentLikeRepository.deleteByCommentId(id);
+    commentRepository.delete(comment);
   }
 
   // Review Like Methods
   public ReviewLike likeReview(Long reviewId, Long userId) {
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    Review review = reviewRepository.findById(reviewId)
+    User user =
+        userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+    Review review =
+        reviewRepository
+            .findById(reviewId)
             .orElseThrow(() -> new RuntimeException("Review not found"));
 
     ReviewLike reviewLike = new ReviewLike();
@@ -139,19 +225,34 @@ public class ReviewCommentService {
   }
 
   // Comment Like Methods
-  public CommentLike likeComment(Long commentId, Long userId) {
-    User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    Comment comment = commentRepository.findById(commentId)
+  public CommentLikeResponseDTO likeComment(Long commentId, Long userId) {
+    User user =
+        userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+    Comment comment =
+        commentRepository
+            .findById(commentId)
             .orElseThrow(() -> new RuntimeException("Comment not found"));
 
     CommentLike commentLike = new CommentLike();
     commentLike.setUser(user);
     commentLike.setComment(comment);
-    return commentLikeRepository.save(commentLike);
+    CommentLike savedCommentLike = commentLikeRepository.save(commentLike);
+    return commentLikeMapper.toDTO(savedCommentLike);
   }
 
   public void unlikeComment(Long id) {
     commentLikeRepository.deleteById(id);
+  }
+
+  public boolean isCommentLikedByUser(Long commentId,Long userId){
+    Comment comment = commentRepository.findById(commentId).orElseThrow(()->new EntityNotFoundException("Comment not found"));
+    User user = userRepository.findById(userId).orElseThrow(()->new EntityNotFoundException("User not found"));
+    return commentLikeRepository.existsByCommentAndUser(comment,user);
+  }
+
+  public List<CommentLikeResponseDTO> findCommentLikesByCommentId(Long commentId){
+    Comment comment = commentRepository.findById(commentId).orElseThrow(()->new EntityNotFoundException("Comment not found"));
+   List<CommentLike> commentLikeList = commentLikeRepository.findByComment(comment);
+   return commentLikeList.stream().map(commentLikeMapper::toDTO).toList();
   }
 }

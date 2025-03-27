@@ -15,21 +15,21 @@ public class WebSocketEventListener {
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
-        logger.info("🟢 اتصال جدید به WebSocket برقرار شد!");
+        logger.info("🟢 New WebSocket connection established!");
     }
 
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
-        logger.info("🔴 اتصال WebSocket قطع شد.");
+        logger.info("🔴 The WebSocket connection was disconnected.");
     }
     @EventListener
     public void handleSessionSubscribeEvent(SessionSubscribeEvent event) {
-        System.out.println("✅ یک SUBSCRIBE جدید انجام شد: " + event);
+        System.out.println("✅ A new SUBSCRIBE was made: " + event);
     }
 
     @EventListener
     public void handleMessageEvent(SessionConnectEvent event) {
-        System.out.println("🔵 یک پیام WebSocket دریافت شد: " + event);
+        System.out.println("🔵 A WebSocket message was received: " + event);
     }
 
 }

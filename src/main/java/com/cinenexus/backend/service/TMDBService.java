@@ -99,7 +99,7 @@ public class TMDBService {
             media.setStatus(status);
 
 
-            // ابتدا چک کن که `mediaType` از قبل ذخیره شده یا نه
+
             MediaType savedMediaType = mediaTypeRepository
                     .findByName(mediaType.getName())
                     .orElseGet(() -> mediaTypeRepository.save(mediaType));
@@ -107,7 +107,7 @@ public class TMDBService {
 
             Media saveMediaBeforeGenre = mediaRepository.save(media);
 
-            // ذخیره ژانرها
+
             Set<MediaGenre> mediaGenres = new HashSet<>();
             if (root.has("genres")) {
                 for (JsonNode genreNode : root.get("genres")) {
@@ -119,7 +119,7 @@ public class TMDBService {
             }
             saveMediaBeforeGenre.setMediaGenres(new ArrayList<>(mediaGenres));
             Media SavedMediaBeforeCompany = mediaRepository.save(saveMediaBeforeGenre);
-            // ذخیره کمپانی‌های تولید
+
             Set<ProductionCompany> productionCompanies = new HashSet<>();
             if (root.has("production_companies")) {
                 for (JsonNode companyNode : root.get("production_companies")) {
@@ -137,7 +137,7 @@ public class TMDBService {
 
             Media savedMediaBeforeCrew = mediaRepository.save(SavedMediaBeforeCompany);
 
-            // ذخیره عوامل فیلم و سریال
+
             Set<MediaCrew> mediaCrews = new HashSet<>();
             if (root.has("credits") && root.get("credits").has("cast")) {
                 for (JsonNode castNode : root.get("credits").get("cast")) {
@@ -165,7 +165,7 @@ public class TMDBService {
 
             Media savedMediaBeforeSeason = mediaRepository.save(savedMediaBeforeCrew);
 
-            // ذخیره فصل‌ها در صورت سریال بودن
+
             if ("tv".equals(mediaType.getName()) && root.has("seasons")) {
                 Set<Season> seasons = new HashSet<>();
                 for (JsonNode seasonNode : root.get("seasons")) {
@@ -206,7 +206,7 @@ public class TMDBService {
             }
 
 
-            // ذخیره رسانه
+
             lastSavedMedia = mediaRepository.save(savedMediaBeforeSeason);
             System.out.println("✅ Media saved: " + savedMediaBeforeSeason.getTitle());
             return lastSavedMedia;
@@ -218,7 +218,7 @@ public class TMDBService {
 
     }
 
-    // آپدیت خودکار دیتابیس هر ۱۲ ساعت
+
     private static final long TWELVE_HOURS = 12 * 60 * 60 * 1000;
 
     @Scheduled(fixedRate = TWELVE_HOURS)
@@ -258,8 +258,8 @@ public class TMDBService {
 
     public void fetchAndSaveAllMedia() {
         List<String> categories = List.of(
-                "tv/top_rated","tv/on_the_air","tv/popular", "tv/top_rated", "tv/airing_today",
-                "movie/popular", "movie/now_playing", "movie/top_rated", "movie/upcoming"
+                "movie/upcoming", "tv/top_rated","tv/on_the_air","tv/popular", "tv/top_rated", "tv/airing_today",
+                "movie/popular", "movie/now_playing", "movie/top_rated"
         );
 
         Set<String> processedCategories = new HashSet<>();
@@ -298,7 +298,7 @@ public class TMDBService {
                         }
                     }
 
-                    // بررسی اینکه آیا صفحه‌ی بعدی وجود دارد
+
                     int totalPages = response.has("total_pages") && response.get("total_pages").isInt()
                             ? response.get("total_pages").asInt()
                             : 1;

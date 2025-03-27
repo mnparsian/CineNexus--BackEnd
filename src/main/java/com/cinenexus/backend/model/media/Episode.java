@@ -20,7 +20,7 @@ public class Episode {
     @ManyToOne
     @JoinColumn(name = "season_id", nullable = false)
     @JsonBackReference
-    private Season season; // این قسمت متعلق به کدام فصل است؟
+    private Season season;
 
     private Integer episodeNumber;
     @Column(length = 1000)
@@ -30,7 +30,7 @@ public class Episode {
     @Column(columnDefinition = "TEXT",length = 1000)
     private String overview;
     private Long tmdbId;
-    private Integer duration; // مدت زمان قسمت به دقیقه
+    private Integer duration;
     @Column(length = 1000)
     private String videoUrl;
 }

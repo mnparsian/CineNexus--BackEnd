@@ -22,7 +22,7 @@ public class Season {
     @ManyToOne
     @JoinColumn(name = "media_id", nullable = false)
     @JsonBackReference
-    private Media media; // این فصل متعلق به کدام سریال است؟
+    private Media media;
     private String name;
     private Integer seasonNumber;
     private Integer totalEpisodes;

@@ -5,6 +5,7 @@ import com.cinenexus.backend.model.media.Genre;
 import com.cinenexus.backend.service.GenreService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,14 +18,16 @@ public class GenreController {
     this.genreService = genreService;
   }
 
-  // دریافت و ذخیره ژانرهای فیلم
+
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/movies")
   public ResponseEntity<String> fetchMovieGenres() {
     genreService.fetchAndStoreGenres("movie");
     return ResponseEntity.ok("Movie genres fetched and stored successfully.");
   }
 
-  // دریافت و ذخیره ژانرهای سریال
+
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/tv")
   public ResponseEntity<String> fetchTVGenres() {
     genreService.fetchAndStoreGenres("tv");

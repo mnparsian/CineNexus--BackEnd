@@ -9,8 +9,16 @@ import lombok.NoArgsConstructor;
 @Data
 public class FriendshipResponseDTO {
     private Long id;
-    private Long userId; // کاربری که درخواست داده
-    private Long friendId; // کاربری که درخواست رو گرفته
+    private Long userId;
+    private String username;
+    private String name;
+    private String surname;
+    private String profileUrl;
+    private Long friendId;
+    private String friendUsername;
+    private String friendName;
+    private String friendSurname;
+    private String friendProfileurl;
     private String requestStatus;
     private String friendshipStatus;
 }

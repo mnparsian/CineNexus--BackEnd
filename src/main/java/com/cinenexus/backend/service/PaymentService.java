@@ -8,6 +8,7 @@ import com.cinenexus.backend.model.payment.Payment;
 import com.cinenexus.backend.model.user.User;
 import com.cinenexus.backend.repository.PaymentRepository;
 import com.cinenexus.backend.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -61,6 +62,12 @@ public class PaymentService {
     return paymentMapper.convertToDTO(payment);
   }
 
+  public List<PaymentResponseDTO> getAllPaymentsByUserId(Long userId){
+    User user = userRepository.findById(userId).orElseThrow(()->new EntityNotFoundException("User Not Found"));
+    List<Payment> paymentList = paymentRepository.findAllByUser(user);
+    return paymentList.stream().map(paymentMapper::convertToDTO).toList();
+  }
+
   public PaymentResponseDTO updatePaymentStatus(Long paymentId, PaymentStatus status) {
     Payment payment =
         paymentRepository
@@ -70,7 +77,7 @@ public class PaymentService {
     payment.setStatus(status);
     payment = paymentRepository.save(payment);
 
-    // اگر پرداخت کامل شد و هنوز اشتراکی ایجاد نشده، اشتراک را ثبت کنیم
+
     if (status == PaymentStatus.COMPLETED && payment.getSubscription() == null) {
       subscriptionService.createSubscription(payment, SubscriptionType.PREMIUM);
     }

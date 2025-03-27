@@ -32,7 +32,7 @@ public class GenreService {
     this.genreRepository = genreRepository;
   }
 
-  // دریافت و ذخیره ژانرهای فیلم یا سریال از TMDB API
+
   @Transactional
   public void fetchAndStoreGenres(String type) {
       String url = apiUrl + "/genre/" + type + "/list?api_key=" + apiKey;
@@ -52,7 +52,7 @@ public class GenreService {
           if (existingGenre.isEmpty()) {
               Genre genre = new Genre();
               genre.setName(name);
-              genre.setTmdbId(tmdbId); // ذخیره `id` اصلی TMDB
+              genre.setTmdbId(tmdbId);
               genreRepository.save(genre);
           }
       }

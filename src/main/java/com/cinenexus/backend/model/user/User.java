@@ -61,7 +61,7 @@ public class User {
 
   private LocalDateTime createdAt = LocalDateTime.now();
 
-  // اطلاعات اضافی
+
   private LocalDate birthday;
 
   @ManyToOne
@@ -74,53 +74,53 @@ public class User {
 
   private String phoneNumber;
 
-  @ElementCollection
-  private List<String> socialLinks;
+  @ElementCollection(fetch = FetchType.LAZY)
+  private List<String> socialLinks = new ArrayList<>();
 
-  // روابط
 
-  // لیست دوستان (با جدول میانی)
+
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
   @JsonManagedReference(value = "user-friends")
   private List<Friendship> friends = new ArrayList<>();
 
-  // لیست فیلم‌های مورد علاقه (با جدول میانی)
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
   private List<FavoriteMovie> favoriteMovies = new ArrayList<>();
 
-  // لیست نقدهای کاربر
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-  @JsonManagedReference
+  @JsonManagedReference(value = "user-reviews")
   private List<Review> reviews = new ArrayList<>();
 
-  // لیست کامنت‌های کاربر
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-  @JsonManagedReference
+  @JsonManagedReference(value = "user-comments")
   private List<Comment> comments = new ArrayList<>();
 
-  // لیست تماشای کاربر (ترکیب واچ‌لیست، در حال تماشا، و دیده‌شده)
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-  @JsonManagedReference
+  @JsonManagedReference(value = "user-watchlist")
   private List<UserWatchlist> watchlist = new ArrayList<>();
 
-  // چت‌ها (با جدول میانی)
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-  @JsonManagedReference
+  @JsonManagedReference(value = "user-chatRooms")
   private List<UserChatRoom> chatRooms = new ArrayList<>();
 
-  // لیست پیام‌های ارسال‌شده
+
   @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
   private List<ChatMessage> messages = new ArrayList<>();
 
-  // لیست پیام‌هایی که این کاربر خوانده است
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
   private List<ChatSeen> lastSeenMessages = new ArrayList<>();
 
-  // لیست ری‌اکشن‌های کاربر به پیام‌ها
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
   private List<ChatReaction> reactions = new ArrayList<>();
 
-  // پرداخت‌ها و اشتراک‌ها
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
   private List<Subscription> subscriptions = new ArrayList<>();
 

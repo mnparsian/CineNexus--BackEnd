@@ -22,7 +22,7 @@ public class Media {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private Long tmdbId; // شناسه TMDB
+    private Long tmdbId;
 
     @Column(nullable = false, length = 1000)
     private String title;
@@ -33,9 +33,9 @@ public class Media {
     private LocalDate releaseDate;
     private Integer runtime;
     @Column(length = 1000)
-    private String posterUrl; // تبدیل شده از TMDB poster_path
+    private String posterUrl;
     @Column(length = 1000)
-    private String backdropUrl; // تبدیل شده از TMDB backdrop_path
+    private String backdropUrl;
     @Column(length = 500)
     private String tagline;
     private String homepage;

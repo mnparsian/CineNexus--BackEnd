@@ -1,5 +1,6 @@
 package com.cinenexus.backend.repository;
 
+import com.cinenexus.backend.model.media.Media;
 import com.cinenexus.backend.model.media.MediaCrew;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,5 +33,8 @@ public interface MediaCrewRepository extends JpaRepository<MediaCrew, Long> {
             "WHERE p.id = :personId")
     List<MediaCrew> findAllByPersonId(@Param("personId") Long personId);
 
+
+    @Query("SELECT mc.media FROM MediaCrew mc WHERE mc.person.id = :personId")
+    List<Media> findMediaByPersonId(@Param("personId") Long personId);
 
 }

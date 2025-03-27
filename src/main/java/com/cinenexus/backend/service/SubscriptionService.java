@@ -30,55 +30,55 @@ public class SubscriptionService {
         this.susbscriptionMapper = susbscriptionMapper;
     }
 
-    // دریافت همه اشتراک‌ها
+
     public List<SubscriptionResponseDTO> getAllSubscriptions() {
         return subscriptionRepository.findAll().stream().map(susbscriptionMapper::toDTO).toList();
     }
 
-    // دریافت یک اشتراک خاص
+
     public SubscriptionResponseDTO getSubscriptionById(Long id) {
         Subscription subscription = subscriptionRepository.findById(id).orElseThrow(()->new EntityNotFoundException("Subscription not found"));
         return susbscriptionMapper.toDTO(subscription);
     }
 
-    // دریافت اشتراک فعال یک کاربر
+
     public Optional<SubscriptionResponseDTO> getUserSubscription(Long userId) {
         return subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE).map(susbscriptionMapper::toDTO);
     }
 
-    // ایجاد اشتراک جدید برای تست (مثلاً بدون پرداخت)
+
     public SubscriptionResponseDTO createSubscription(Payment payment, SubscriptionType type) {
         User user = payment.getUser();
 
-        // دریافت لیست اشتراک‌های کاربر
+
         List<Subscription> subscriptions = subscriptionRepository.findByUserOrderByStartDateDesc(user);
 
-        // اگر لیست خالی باشد، یعنی کاربر هیچ اشتراکی ندارد
+
         if (subscriptions.isEmpty()) {
             return susbscriptionMapper.toDTO(createNewSubscription(user, payment, type)) ;
         }
 
-        // دریافت آخرین اشتراک
+
         Subscription lastSubscription = subscriptions.get(0);
 
-        // بررسی اینکه آیا اشتراک قبلی همچنان فعال است
+
         if (lastSubscription.getStatus() == SubscriptionStatus.ACTIVE) {
             System.out.println("⚠️ User " + user.getId() + " already has an active subscription. Skipping subscription creation.");
             return susbscriptionMapper.toDTO(lastSubscription) ;
         }
 
-        // اگر اشتراک قبلی غیرفعال شده، یک اشتراک جدید ایجاد کن
+
         Subscription savedSubscription =  createNewSubscription(user, payment, type);
         return susbscriptionMapper.toDTO(savedSubscription);
     }
 
-    // متد کمکی برای ایجاد اشتراک جدید
+
     private Subscription createNewSubscription(User user, Payment payment, SubscriptionType type) {
         Subscription subscription = new Subscription();
         subscription.setUser(user);
         subscription.setPayment(payment);
         subscription.setStartDate(LocalDateTime.now());
-        subscription.setEndDate(LocalDateTime.now().plusMonths(1)); // یک ماهه
+        subscription.setEndDate(LocalDateTime.now().plusMonths(1));
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setType(type);
 
@@ -87,7 +87,7 @@ public class SubscriptionService {
 
 
 
-    // تمدید اشتراک
+
     public Optional<SubscriptionResponseDTO> renewSubscription(Long id) {
         return subscriptionRepository.findById(id).map(subscription -> {
             subscription.setEndDate(subscription.getEndDate().plusMonths(1));
@@ -97,7 +97,7 @@ public class SubscriptionService {
         });
     }
 
-    // لغو اشتراک
+
     public boolean cancelSubscription(Long id) {
         return subscriptionRepository.findById(id).map(subscription -> {
             subscription.setStatus(SubscriptionStatus.EXPIRED);
@@ -118,7 +118,7 @@ public class SubscriptionService {
 
 
 
-    @Scheduled(cron = "0 0 0 * * ?") // اجرای روزانه در نیمه‌شب
+    @Scheduled(cron = "0 0 0 * * ?")
     public void deactivateExpiredSubscriptions() {
         List<Subscription> expiredSubscriptions = subscriptionRepository.findByEndDateBeforeAndStatus(
                 LocalDateTime.now(), SubscriptionStatus.ACTIVE);

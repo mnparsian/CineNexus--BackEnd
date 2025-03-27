@@ -23,4 +23,9 @@ public class FavoriteMovie {
     @ManyToOne
     @JoinColumn(name = "media_id", nullable = false)
     private Media media;
+
+    public FavoriteMovie(User user, Media media) {
+        this.user = user;
+        this.media = media;
+    }
 }

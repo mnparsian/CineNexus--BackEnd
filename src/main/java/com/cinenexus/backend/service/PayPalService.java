@@ -12,6 +12,7 @@ import com.paypal.base.rest.PayPalRESTException;
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.http.*;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -51,73 +52,79 @@ public class PayPalService {
         this.subscriptionService = subscriptionService;
     }
 
-    public String createPayment(Double amount, String currency, String description, String cancelUrl, String successUrl) throws PayPalRESTException {
-        // ساخت مبلغ PayPal
+    public Map<String, String> createPayment(Double amount, String currency, String description, String cancelUrl, String successUrl, UserDetails userDetails) throws PayPalRESTException {
+
         Amount paypalAmount = new Amount();
         paypalAmount.setCurrency(currency);
         paypalAmount.setTotal(String.format("%.2f", amount));
 
-        // ساخت تراکنش PayPal
+
         Transaction transaction = new Transaction();
         transaction.setDescription(description);
         transaction.setAmount(paypalAmount);
         List<Transaction> transactions = new ArrayList<>();
         transactions.add(transaction);
 
-        // تنظیم خریدار (payer) برای PayPal
+
         Payer payer = new Payer();
         payer.setPaymentMethod("paypal");
 
-        // ساخت شیء پرداخت PayPal (استفاده از کلاس Payment مربوط به PayPal)
+
         com.paypal.api.payments.Payment paymentRequest = new com.paypal.api.payments.Payment();
         paymentRequest.setIntent("sale");
         paymentRequest.setPayer(payer);
         paymentRequest.setTransactions(transactions);
 
-        // تنظیم URL‌های بازگشت (موفقیت/لغو) برای PayPal
+
         RedirectUrls redirectUrls = new RedirectUrls();
         redirectUrls.setCancelUrl(cancelUrl);
         redirectUrls.setReturnUrl(successUrl);
         paymentRequest.setRedirectUrls(redirectUrls);
 
-        // ایجاد پرداخت در PayPal
+
         com.paypal.api.payments.Payment createdPayment = paymentRequest.create(apiContext);
 
-        // ثبت مشخصات پرداخت در دیتابیس با وضعیت در انتظار (Pending)
+
         String paypalPaymentId = createdPayment.getId();
-        // (در اینجا فرض شده که کاربر فعلی مشخص است؛ در حال حاضر از شناسه تستی استفاده می‌کنیم)
-        User user = userRepository.findById(1L).orElseThrow(() -> new RuntimeException("User not found"));
+
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow(() -> new RuntimeException("User not found"));
         com.cinenexus.backend.model.payment.Payment paymentRecord = new com.cinenexus.backend.model.payment.Payment();
         paymentRecord.setPaypalPaymentId(paypalPaymentId);
         paymentRecord.setUser(user);
         paymentRecord.setAmount(amount);
         paymentRecord.setStatus(PaymentStatus.PENDING);
         paymentRecord.setPaymentDate(null);
-        paymentRepository.save(paymentRecord);
+        com.cinenexus.backend.model.payment.Payment savedPayment = paymentRepository.save(paymentRecord);
+        String paymentId = savedPayment.getId().toString();
 
-        // بازگرداندن لینک تأیید پرداخت PayPal به فرانت‌اند
-        return createdPayment.getLinks().stream()
+
+        String approvalLink = createdPayment.getLinks().stream()
                 .filter(link -> link.getRel().equals("approval_url"))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Approval URL not found"))
                 .getHref();
+
+        Map<String, String> response = new HashMap<>();
+        response.put("paymentId", paymentId);
+        response.put("approvalLink", approvalLink);
+        return response;
     }
 
     public Map<String, Object> executePayment(String paymentId, String payerId) {
         try {
-            // دریافت توکن PayPal
+
             String accessToken = getAccessToken();
             System.out.println("🟢 Sending Payment Execution with Token: " + accessToken);
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(accessToken); // ارسال توکن در هدر
+            headers.setBearerAuth(accessToken);
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // ساخت بدنه درخواست
+
             Map<String, String> requestBody = Map.of("payer_id", payerId);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
 
-            // ارسال درخواست به PayPal برای تأیید پرداخت
+
             ResponseEntity<Map> response = restTemplate.exchange(
                     PAYPAL_API_BASE + "/v1/payments/payment/" + paymentId + "/execute",
                     HttpMethod.POST, request, Map.class);
@@ -137,30 +144,30 @@ public class PayPalService {
 
     public boolean completePayment(String paymentId, String token, String payerId) {
         try {
-            // ارسال درخواست به PayPal برای تایید پرداخت
+
             Map<String, Object> paymentDetails = this.executePayment(paymentId, payerId);
 
-            // بررسی اینکه آیا PayPal پاسخی داده است
+
             if (paymentDetails == null) {
                 System.err.println("❌ PayPal response is NULL");
                 return false;
             }
 
-            // چاپ پاسخ دریافتی از PayPal برای دیباگ
+
             System.out.println("🔍 PayPal Response: " + paymentDetails);
 
-            // پیدا کردن پرداخت مرتبط در دیتابیس با استفاده از paypalPaymentId
+
             Optional<com.cinenexus.backend.model.payment.Payment> optionalPayment =
                     paymentRepository.findByPaypalPaymentId(paymentId);
 
             if (optionalPayment.isEmpty()) {
                 System.err.println("❌ Payment record not found in database for PayPal ID: " + paymentId);
-                return false; // اگر پرداختی با این ID در دیتابیس پیدا نشد
+                return false;
             }
 
             com.cinenexus.backend.model.payment.Payment paymentRecord = optionalPayment.get();
 
-            // بررسی نتیجه پرداخت (باید `approved` باشد)
+
             String paymentState = (String) paymentDetails.get("state");
             if (paymentState == null || !"approved".equalsIgnoreCase(paymentState)) {
                 System.err.println("❌ Payment state is not approved: " + paymentState);
@@ -170,7 +177,7 @@ public class PayPalService {
                 return false;
             }
 
-            // بررسی مقدار `amount` که از PayPal دریافت شده
+
             Map<String, Object> transactions = ((List<Map<String, Object>>) paymentDetails.get("transactions")).get(0);
             Map<String, Object> amountInfo = (Map<String, Object>) transactions.get("amount");
 
@@ -181,13 +188,13 @@ public class PayPalService {
 
             Double paidAmount = Double.parseDouble(amountInfo.get("total").toString());
 
-            // به‌روزرسانی اطلاعات پرداخت در دیتابیس پس از موفقیت
+
             paymentRecord.setAmount(paidAmount);
             paymentRecord.setStatus(PaymentStatus.COMPLETED);
             paymentRecord.setPaymentDate(LocalDateTime.now());
             paymentRepository.save(paymentRecord);
 
-            // ایجاد اشتراک برای کاربر پس از موفقیت پرداخت
+
             subscriptionService.createSubscription(paymentRecord, SubscriptionType.PREMIUM);
 
             System.out.println("✅ Payment successfully completed for user: " + paymentRecord.getUser().getId());

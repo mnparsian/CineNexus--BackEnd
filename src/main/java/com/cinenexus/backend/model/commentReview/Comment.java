@@ -3,10 +3,13 @@ package com.cinenexus.backend.model.commentReview;
 import com.cinenexus.backend.model.media.Media;
 import com.cinenexus.backend.model.user.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@ToString(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "comments")
 public class Comment {
@@ -33,12 +37,14 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "media_id", nullable = true)
     private Media media;
-
-    @ManyToOne
-    @JoinColumn(name = "parent_comment_id")
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id", nullable = true)
+    @JsonIgnore
     private Comment parentComment;
-
-    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.REMOVE,fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Comment> replies;
 
     @Column(nullable = false, length = 2000)

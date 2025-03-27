@@ -7,6 +7,7 @@ import com.cinenexus.backend.enumeration.ChatRoomType;
 import com.cinenexus.backend.model.chat.*;
 import com.cinenexus.backend.service.ChatService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class ChatController {
     public ChatController(ChatService chatService) {
         this.chatService = chatService;
     }
-
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/room")
     public ResponseEntity<ChatRoomResponseDTO> createChatRoom(@RequestBody Map<String, Object> payload) {
         Long creatorId = Long.valueOf((Integer) payload.get("creatorId"));
@@ -35,11 +36,12 @@ public class ChatController {
     }
 
 
-
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/message")
     public ResponseEntity<?> sendMessage(@RequestBody Map<String, Object> payload) {
         Long chatRoomId = Long.valueOf(payload.get("chatRoomId").toString());
         Long senderId = Long.valueOf(payload.get("senderId").toString());
+        Long recieverId = Long.valueOf(payload.get("receiverId").toString());
         String content = payload.get("content") != null ? payload.get("content").toString() : null;
 
         if (content == null || content.trim().isEmpty()) {
@@ -47,18 +49,18 @@ public class ChatController {
         }
 
         try {
-            MessageResponseDTO responseDTO = chatService.sendMessage(chatRoomId, senderId, content);
+            MessageResponseDTO responseDTO = chatService.sendMessage(chatRoomId, senderId,recieverId, content);
             return ResponseEntity.ok(responseDTO);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/messages/{chatRoomId}")
     public ResponseEntity<List<MessageResponseDTO>> getMessages(@PathVariable Long chatRoomId) {
         return ResponseEntity.ok(chatService.getMessages(chatRoomId));
     }
-
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/seen")
     public ResponseEntity<?> markAsSeen(@RequestBody Map<String, Object> payload) {
         Long userId = Long.valueOf(payload.get("userId").toString());
@@ -68,7 +70,7 @@ public class ChatController {
         chatService.markAsSeen(userId, chatRoomId, lastMessageId);
         return ResponseEntity.ok("Message seen updated");
     }
-
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/reaction")
     public ResponseEntity<?> reactToMessage(@RequestBody Map<String, Object> payload) {
         Long userId = Long.valueOf(payload.get("userId").toString());
@@ -80,7 +82,8 @@ public class ChatController {
     }
 
 
-    // ✅ ویرایش پیام
+
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PutMapping("/message/edit")
     public ResponseEntity<MessageResponseDTO> editMessage(@RequestBody Map<String, Object> payload) {
         Long messageId = Long.valueOf(payload.get("messageId").toString());
@@ -91,7 +94,8 @@ public class ChatController {
         return ResponseEntity.ok(updatedMessage);
     }
 
-    // ✅ حذف پیام
+
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @DeleteMapping("/message/delete")
     public ResponseEntity<String> deleteMessage(@RequestBody Map<String, Object> payload) {
         Long messageId = Long.valueOf(payload.get("messageId").toString());
@@ -101,7 +105,8 @@ public class ChatController {
         return ResponseEntity.ok("Message deleted successfully.");
     }
 
-    // ✅ ویرایش ری‌اکشن
+
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PutMapping("/reaction/edit")
     public ResponseEntity<?> editReaction(@RequestBody Map<String, Object> payload) {
         Long reactionId = Long.valueOf(payload.get("reactionId").toString());
@@ -112,7 +117,8 @@ public class ChatController {
         return ResponseEntity.ok(updatedReaction);
     }
 
-    // ✅ حذف ری‌اکشن
+
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @DeleteMapping("/reaction/delete")
     public ResponseEntity<String> deleteReaction(@RequestBody Map<String, Object> payload) {
         Long reactionId = Long.valueOf(payload.get("reactionId").toString());

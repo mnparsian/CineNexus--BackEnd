@@ -1,5 +1,5 @@
 package com.cinenexus.backend.enumeration;
 
 public enum FriendshipStatusType {
-    ACCEPTED, BLOCKED;
+    ACCEPTED, BLOCKED,NOT_FRIEND;
 }

@@ -30,7 +30,7 @@ public class MediaCrew {
     private CrewRole crewRole;
 
     @Column
-    private String characterName; // فقط برای بازیگران استفاده می‌شود
+    private String characterName;
 
     public MediaCrew(Person person, Media media, CrewRole crewRole, String characterName) {
         this.person = person;

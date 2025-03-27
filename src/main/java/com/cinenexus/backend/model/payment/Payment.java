@@ -30,7 +30,7 @@ public class Payment {
     private PaymentStatus status;
 
     @OneToOne(mappedBy = "payment")
-    private Subscription subscription; // اشتراک مربوط به این پرداخت
+    private Subscription subscription;
 
     @Column(unique = true)
     private String paypalPaymentId;

@@ -25,7 +25,7 @@ public class ChatReaction {
     private ChatMessage message;
 
     @Column(nullable = false, length = 10)
-    private String reaction; // ایموجی یا نوع ری‌اکشن
+    private String reaction;
 
     public ChatReaction(User user, ChatMessage message, String reaction) {
         this.user = user;

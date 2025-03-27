@@ -1,5 +1,6 @@
 package com.cinenexus.backend.controller;
 
+import com.cinenexus.backend.dto.media.MediaResponseDTO;
 import com.cinenexus.backend.model.media.*;
 import com.cinenexus.backend.service.CrewQueryService;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import java.util.List;
 public class CrewQueryController {
 
     private final CrewQueryService crewQueryService;
+
 
     public CrewQueryController(CrewQueryService crewQueryService) {
         this.crewQueryService = crewQueryService;
@@ -59,6 +61,11 @@ public class CrewQueryController {
     @GetMapping("/roles")
     public ResponseEntity<List<?>> getAllCrewRoles() {
         return ResponseEntity.ok(crewQueryService.getAllCrewRoles());
+    }
+
+    @GetMapping("/media/person/{personId}")
+    public ResponseEntity<List<MediaResponseDTO>> getAllMediaByPersonId(@PathVariable Long personId){
+        return ResponseEntity.ok(crewQueryService.getAllMediaByPersonId(personId));
     }
 }
 

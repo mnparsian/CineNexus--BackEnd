@@ -16,7 +16,7 @@ public class BeanLogger implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        System.out.println("🔍 لیست تمام Bean های ثبت‌شده در Spring:");
+        System.out.println("🔍List of all beans registered in Spring:");
         String[] beanNames = applicationContext.getBeanDefinitionNames();
         Arrays.sort(beanNames);
         for (String beanName : beanNames) {

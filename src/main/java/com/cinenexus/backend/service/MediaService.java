@@ -129,7 +129,7 @@ public class MediaService {
     media.setTmdbId(tmdbId);
 
     if (isTVShow) {
-      // پردازش داده‌های سریال
+
       media.setTitle((String) response.get("name"));
       media.setOriginalTitle((String) response.get("original_name"));
       media.setReleaseDate(
@@ -137,7 +137,7 @@ public class MediaService {
               ? LocalDate.parse((String) response.get("first_air_date"))
               : null);
     } else {
-      // پردازش داده‌های فیلم
+
       media.setTitle((String) response.get("title"));
       media.setOriginalTitle((String) response.get("original_title"));
       media.setReleaseDate(
@@ -177,14 +177,14 @@ public class MediaService {
         genres.stream().map(genre -> new MediaGenre(media, genre)).collect(Collectors.toList());
     media.setMediaGenres(mediaGenres);
 
-    // ذخیره Media در دیتابیس
+
     Media savedMedia = mediaRepository.save(media);
 
-    // بررسی اینکه API مقدار Seasons دارد یا نه
+
     System.out.println("Seasons from API: " + response.get("seasons"));
     System.out.println("Production Companies from API: " + response.get("production_companies"));
 
-    // ذخیره فصل‌ها
+
     if (isTVShow) {
       List<Map<String, Object>> seasons =
           response.get("seasons") != null
@@ -197,7 +197,7 @@ public class MediaService {
                   season -> {
                     Season newSeason =
                         new Season(
-                            savedMedia, // ارتباط با media ذخیره‌شده
+                            savedMedia,
                             (Integer) season.get("season_number"),
                             season.get("episode_count") != null
                                 ? (Integer) season.get("episode_count")
@@ -213,7 +213,7 @@ public class MediaService {
 
       savedMedia.setSeasons(seasonList);
     } else {
-      // پردازش اطلاعات خاص فیلم
+
       Integer runtime =
           response.get("runtime") != null ? ((Number) response.get("runtime")).intValue() : 0;
       savedMedia.setTagline(
@@ -236,7 +236,7 @@ public class MediaService {
     System.out.println("Poster URL: " + media.getPosterUrl());
     System.out.println("Backdrop URL: " + media.getBackdropUrl());
 
-    // ذخیره شرکت‌های تولیدکننده
+
     List<Map<String, Object>> companies =
         response.get("production_companies") != null
             ? (List<Map<String, Object>>) response.get("production_companies")
@@ -257,14 +257,14 @@ public class MediaService {
 
     savedMedia.setProductionCompanies(productionCompanies);
 
-    // حالا Media را مجدداً ذخیره کن تا تغییرات اعمال شوند
+
     Media finalMedia = mediaRepository.save(savedMedia);
     System.out.println("Saved Media: " + finalMedia);
     return finalMedia;
   }
 
   public void fetchAndSaveTVDetails() {
-    List<Media> tvShows = mediaRepository.findByIsTVShowTrue(); // فقط سریال‌ها را بگیر
+    List<Media> tvShows = mediaRepository.findByIsTVShowTrue();
 
     for (Media media : tvShows) {
       try {
@@ -275,28 +275,28 @@ public class MediaService {
           ObjectMapper objectMapper = new ObjectMapper();
           JsonNode jsonNode = objectMapper.readTree(response.getBody());
 
-          // استخراج سیزن‌ها
+
           List<Season> seasons = new ArrayList<>();
           for (JsonNode seasonNode : jsonNode.get("seasons")) {
             Season season = new Season();
             season.setName(seasonNode.get("name").asText());
             season.setSeasonNumber(seasonNode.get("season_number").asInt());
             season.setTotalEpisodes(seasonNode.get("episode_count").asInt());
-            season.setMedia(media); // ارتباط با Media
+            season.setMedia(media);
             seasons.add(season);
           }
 
-          // استخراج کمپانی‌های تولید
+
           List<ProductionCompany> companies = new ArrayList<>();
           for (JsonNode companyNode : jsonNode.get("production_companies")) {
             ProductionCompany company = new ProductionCompany();
             company.setName(companyNode.get("name").asText());
             company.setOriginCountry(companyNode.get("origin_country").asText());
-            company.setMedia(media); // ارتباط با Media
+            company.setMedia(media);
             companies.add(company);
           }
 
-          // ذخیره در دیتابیس
+
           media.setSeasons(seasons);
           media.setProductionCompanies(companies);
           mediaRepository.save(media);

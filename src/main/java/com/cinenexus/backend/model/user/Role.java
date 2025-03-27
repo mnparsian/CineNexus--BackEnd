@@ -18,4 +18,9 @@ public class Role {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,unique = true)
     private RoleType name;
+
+    public String name() {
+        return name.name();
+    }
+
 }

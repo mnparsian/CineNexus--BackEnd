@@ -12,9 +12,13 @@ import com.cinenexus.backend.model.user.User;
 import com.cinenexus.backend.model.user.Friendship;
 
 import com.cinenexus.backend.repository.*;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,6 +33,9 @@ public class ChatService {
   private final ChatReactionRepository chatReactionRepository;
   private final FriendshipRepository friendshipRepository;
   private final ChatRequestRepository chatRequestRepository;
+  private final UserChatRoomRepository userChatRoomRepository;
+  private  final MessageMapper messageMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
   public ChatService(
       ChatRoomRepository chatRoomRepository,
@@ -37,7 +44,10 @@ public class ChatService {
       ChatSeenRepository chatSeenRepository,
       ChatReactionRepository chatReactionRepository,
       FriendshipRepository friendshipRepository,
-      ChatRequestRepository chatRequestRepository) {
+      ChatRequestRepository chatRequestRepository,
+      UserChatRoomRepository userChatRoomRepository,
+      MessageMapper messageMapper,
+      SimpMessagingTemplate messagingTemplate) {
     this.chatRoomRepository = chatRoomRepository;
     this.chatMessageRepository = chatMessageRepository;
     this.userRepository = userRepository;
@@ -45,6 +55,9 @@ public class ChatService {
     this.chatReactionRepository = chatReactionRepository;
     this.friendshipRepository = friendshipRepository;
     this.chatRequestRepository = chatRequestRepository;
+    this.userChatRoomRepository = userChatRoomRepository;
+    this.messageMapper = messageMapper;
+    this.messagingTemplate = messagingTemplate;
   }
 
     public ChatRoomResponseDTO createChatRoom(Long creatorId, List<Long> userIds, ChatRoomType type, String name) {
@@ -66,70 +79,94 @@ public class ChatService {
 
         chatRoomRepository.save(savedChatRoom);
 
-        // **پاسخ را فقط با اطلاعات ضروری برمی‌گردانیم تا از لوپ جلوگیری شود**
+
         return new ChatRoomResponseDTO(savedChatRoom.getId(), savedChatRoom.getName(), savedChatRoom.getType(), creator.getId());
     }
 
 
 
-
-    public MessageResponseDTO sendMessage(Long chatRoomId, Long senderId, String content) {
+    public MessageResponseDTO sendMessage(Long chatRoomId, Long senderId, Long receiverId, String content) {
         if (content == null || content.trim().isEmpty()) {
             throw new RuntimeException("Message content cannot be empty");
         }
-    User sender =
-        userRepository
-            .findById(senderId)
-            .orElseThrow(() -> new RuntimeException("Sender not found"));
-    ChatRoom chatRoom =
-        chatRoomRepository
-            .findById(chatRoomId)
-            .orElseThrow(() -> new RuntimeException("ChatRoom not found"));
 
-    if (chatRoom.getType() == ChatRoomType.PRIVATE) {
-      List<UserChatRoom> participants = chatRoom.getParticipants();
-      if (participants.size() == 2) {
-        User receiver =
-            participants.stream()
-                .map(UserChatRoom::getUser)
-                .filter(user -> !user.getId().equals(senderId))
-                .findFirst()
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new RuntimeException("Sender not found"));
+
+        User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new RuntimeException("Receiver not found"));
 
-          Optional<Friendship> friendship = friendshipRepository.findByUsers(sender, receiver);
-          if (friendship.isEmpty() || friendship.get().getFriendshipStatus().getName() != FriendshipStatusType.ACCEPTED) {
-              ChatRequest chatRequest = new ChatRequest(sender, receiver, LocalDateTime.now());
-              chatRequestRepository.save(chatRequest);
-              throw new RuntimeException("Chat request sent. Waiting for approval.");
-          }
+        ChatRoom chatRoom;
+        if (chatRoomId == null) {
+            Optional<ChatRoom> existingRoom = chatRoomRepository.findPrivateChatRoomByUsers(sender, receiver);
+            if (existingRoom.isPresent()) {
+                chatRoom = existingRoom.get();
+            } else {
+                chatRoom = new ChatRoom();
+                chatRoom.setType(ChatRoomType.PRIVATE);
+                chatRoom.setName("PRIVATE_CHAT_" + sender.getId() + "_" + receiver.getId());
+                chatRoom.setCreatedBy(sender);
+                chatRoomRepository.save(chatRoom);
 
-      }
+                userChatRoomRepository.save(new UserChatRoom(sender, chatRoom));
+                userChatRoomRepository.save(new UserChatRoom(receiver, chatRoom));
+            }
+        } else {
+            chatRoom = chatRoomRepository.findById(chatRoomId)
+                    .orElseThrow(() -> new RuntimeException("ChatRoom not found"));
+        }
+
+        ChatMessage message = new ChatMessage(sender, chatRoom, content, LocalDateTime.now());
+        ChatMessage savedMessage = chatMessageRepository.save(message);
+        MessageResponseDTO dto = messageMapper.toDTO(savedMessage);
+
+
+        List<UserChatRoom> participants = userChatRoomRepository.findUsersByChatRoom(chatRoom);
+        for (UserChatRoom participant : participants) {
+            messagingTemplate.convertAndSendToUser(
+                    participant.getUser().getId().toString(),
+                    "/queue/chat",
+                    dto
+            );
+        }
+
+        return dto;
+    }
+    public List<MessageResponseDTO> getPreviousMessages(Long chatRoomId) {
+        List<ChatMessage> messages = chatMessageRepository.findByChatRoomIdOrderBySentAtAsc(chatRoomId);
+        return messages.stream().map(msg -> new MessageResponseDTO(
+                msg.getId(),
+                msg.getChatRoom().getId(),
+                msg.getSender().getId(),
+                msg.getContent(),
+                msg.getSentAt(),
+                msg.getEditedAt(),
+                msg.getDeletedAt()
+        )).collect(Collectors.toList());
+    }
+    public Long findChatRoomId(Long userId, Long friendId) {
+        Optional<ChatRoom> chatRoom = chatRoomRepository.findPrivateChatRoom(userId, friendId);
+         if(chatRoom.isPresent()){
+             return chatRoom.get().getId();
+         }
+         else{
+             ChatRoom newChatRoom = new ChatRoom();
+             newChatRoom.setName(STR."\{userId.toString()}And\{friendId.toString()}");
+             newChatRoom.setType(ChatRoomType.PRIVATE);
+             User user = userRepository.findById(userId).orElseThrow(()->new EntityNotFoundException("User not found"));
+             newChatRoom.setCreatedBy(user);
+             newChatRoom.setCreatedAt(LocalDateTime.now());
+         return chatRoomRepository.save(newChatRoom).getId();
+         }
     }
 
-    ChatMessage message = new ChatMessage();
-    message.setChatRoom(chatRoom);
-    message.setSender(sender);
-    message.setContent(content);
-    message.setSentAt(LocalDateTime.now());
-        System.out.println("Message Content: " + content);
 
 
-        ChatMessage savedMessage = chatMessageRepository.save(message);
-        return new MessageResponseDTO(
-                savedMessage.getId(),
-                chatRoomId,
-                senderId,
-                content,
-                savedMessage.getSentAt(),
-                savedMessage.getEditedAt(),
-                savedMessage.getDeletedAt()
-        );
-  }
 
     public List<MessageResponseDTO> getMessages(Long chatRoomId) {
         List<ChatMessage> messages = chatMessageRepository.findByChatRoomIdOrderBySentAtAsc(chatRoomId);
         return messages.stream()
-                .map(MessageMapper::toDTO)
+                .map(messageMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -198,7 +235,7 @@ public class ChatService {
 
   }
 
-    // ✅ ویرایش پیام
+
     public MessageResponseDTO editMessage(Long messageId, Long userId, String newContent) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message not found"));
@@ -218,7 +255,7 @@ public class ChatService {
         return new MessageResponseDTO(savedChat.getId(),savedChat.getChatRoom().getId(),savedChat.getSender().getId(),savedChat.getContent(),savedChat.getSentAt(),savedChat.getEditedAt(),savedChat.getDeletedAt());
     }
 
-    // ✅ حذف پیام (Soft Delete)
+
     public void deleteMessage(Long messageId, Long userId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message not found"));
@@ -227,11 +264,11 @@ public class ChatService {
             throw new RuntimeException("You can only delete your own messages!");
         }
 
-        message.setDeletedAt(LocalDateTime.now()); // علامت‌گذاری به عنوان حذف‌شده
+        message.setDeletedAt(LocalDateTime.now());
         chatMessageRepository.save(message);
     }
 
-    // ✅ ویرایش ری‌اکشن
+
     public ChatReactionDTO editReaction(Long reactionId, Long userId, String newReactionType) {
         ChatReaction reaction = chatReactionRepository.findById(reactionId)
                 .orElseThrow(() -> new RuntimeException("Reaction not found"));
@@ -251,7 +288,7 @@ public class ChatService {
         return reactionDTO;
     }
 
-    // ✅ حذف ری‌اکشن
+
     public void deleteReaction(Long reactionId, Long userId) {
         ChatReaction reaction = chatReactionRepository.findById(reactionId)
                 .orElseThrow(() -> new RuntimeException("Reaction not found"));

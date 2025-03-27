@@ -16,6 +16,8 @@ import com.cinenexus.backend.model.user.UserStatus;
 import com.cinenexus.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,15 +30,17 @@ public class UserMapper {
   @Autowired private UserStatusRepository userStatusRepository;
   @Autowired private CountryRepository countryRepository;
   @Autowired private LanguageRepository languageRepository;
+  @Autowired private  PasswordEncoder passwordEncoder;
 
   public User toEntity(UserRequestDTO dto) {
+
     User user = new User();
     user.setUsername(dto.getUsername());
     user.setEmail(dto.getEmail());
-    user.setPassword(dto.getPassword());
+    user.setPassword(passwordEncoder.encode(dto.getPassword()));
     RoleType roleType;
     try {
-      roleType = RoleType.valueOf(dto.getRole().toUpperCase()); // تبدیل String به Enum
+      roleType = RoleType.valueOf(dto.getRole().toUpperCase());
     } catch (IllegalArgumentException e) {
       throw new RuntimeException("Invalid role: " + dto.getRole());
     }
@@ -130,7 +134,7 @@ public class UserMapper {
     return dto;
   }
 
-  public User updateUser(User user, UserRequestDTO dto) {
+  public User updateUser(User user, UserUpdateRequestDTO dto) {
     if (dto.getUsername() != null) {
       user.setUsername(dto.getUsername());
     }
@@ -138,14 +142,10 @@ public class UserMapper {
       user.setEmail(dto.getEmail());
     }
 
-    if (dto.getPassword() != null) {
-      user.setPassword(dto.getPassword());
-    }
-
     if (dto.getRole() != null) {
       RoleType roleType;
       try {
-        roleType = RoleType.valueOf(dto.getRole().toUpperCase()); // تبدیل String به Enum
+        roleType = RoleType.valueOf(dto.getRole().toUpperCase());
       } catch (IllegalArgumentException e) {
         throw new RuntimeException("Invalid role: " + dto.getRole());
       }
@@ -187,6 +187,66 @@ public class UserMapper {
     if (dto.getPhoneNumber() != null) {
       user.setPhoneNumber(dto.getPhoneNumber());
     }
+    return user;
+  }
+
+
+  public UserProfileDTO toProfileDTO(User user){
+    UserProfileDTO dto = new UserProfileDTO();
+    dto.setId(user.getId());
+    dto.setUsername(user.getUsername());
+    dto.setEmail(user.getEmail());
+    dto.setRole(user.getRole().getName().name());
+    dto.setName(user.getName());
+    dto.setSurname(user.getSurname());
+    dto.setBio(user.getBio());
+    dto.setProfileImage(user.getProfileImage());
+    dto.setCreatedAt(user.getCreatedAt());
+    dto.setBirthday(user.getBirthday());
+    dto.setSocialLinks(user.getSocialLinks());
+    return dto;
+  }
+
+  public User AdminRequestDTOToUser(UserAdminRequestDTO request){
+    User user = new User();
+    user.setName(request.getName());
+    user.setSurname(request.getSurname());
+    user.setUsername(request.getUsername());
+    user.setEmail(request.getEmail());
+    user.setPassword(passwordEncoder.encode(request.getPassword()));
+    RoleType roleType;
+    try {
+      roleType = RoleType.valueOf(request.getRole().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new RuntimeException("Invalid role: " + request.getRole());
+    }
+
+    Role role =
+            roleRepository
+                    .findByName(roleType)
+                    .orElseThrow(
+                            () ->
+                                    new RuntimeException(
+                                            "The Role with this name " + request.getRole() + " not found"));
+    user.setRole(role);
+
+    UserStatus userStatus =
+            userStatusRepository
+                    .findByName(UserStatusType.ACTIVE)
+                    .orElseThrow(() -> new RuntimeException("Status Not Found!"));
+    user.setStatus(userStatus);
+
+    Country country =
+            countryRepository
+                    .findById(1L)
+                    .orElseThrow(() -> new RuntimeException("Country Not Found!"));
+    user.setCountry(country);
+
+    Language language =
+            languageRepository
+                    .findById(1L)
+                    .orElseThrow(() -> new RuntimeException("Language not found!"));
+    user.setPreferredLanguage(language);
     return user;
   }
 }

@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class FriendshipRequestDTO {
-    private Long friendId; // آیدی کاربری که درخواست دوستی بهش فرستاده می‌شه
+    private Long friendId;
 }

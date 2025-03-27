@@ -20,5 +20,18 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
 
 
 
+    @Query("SELECT cr FROM ChatRoom cr " +
+            "JOIN cr.participants p1 " +
+            "JOIN cr.participants p2 " +
+            "WHERE p1.user = :user1 " +
+            "AND p2.user = :user2 " +
+            "AND cr.type = 'PRIVATE'")
+    Optional<ChatRoom> findPrivateChatRoomByUsers(@Param("user1") User user1, @Param("user2") User user2);
+
+
+
+    @Query("SELECT cr FROM ChatRoom cr JOIN cr.participants p1 JOIN cr.participants p2 " +
+            "WHERE p1.user.id = :userId AND p2.user.id = :friendId AND cr.type = 'PRIVATE'")
+    Optional<ChatRoom> findPrivateChatRoom(@Param("userId") Long userId, @Param("friendId") Long friendId);
 
 }

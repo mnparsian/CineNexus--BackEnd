@@ -5,6 +5,7 @@ import com.cinenexus.backend.service.MediaService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -19,12 +20,12 @@ public class MediaController {
   public MediaController(MediaService mediaService) {
     this.mediaService = mediaService;
   }
-
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/fetch/movie/{tmdbId}")
   public ResponseEntity<Media> fetchAndStoreMovie(@PathVariable Long tmdbId) {
     return ResponseEntity.ok(mediaService.fetchAndStoreMovie(tmdbId));
   }
-
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/fetch/tv/{tmdbId}")
   public ResponseEntity<Media> fetchAndStoreTVShow(@PathVariable Long tmdbId) {
     return ResponseEntity.ok(mediaService.fetchAndStoreTVShow(tmdbId));
@@ -81,11 +82,11 @@ public class MediaController {
 
     return ResponseEntity.ok(mediaService.fetchMediaCredits(url, page, size, isTVShow));
   }
-
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/update-tv-details")
   public ResponseEntity<String> updateTVShowDetails() {
     mediaService.fetchAndSaveTVDetails();
-    return ResponseEntity.ok("بروزرسانی جزئیات سریال‌ها شروع شد.");
+    return ResponseEntity.ok("Updating of series details has begun.");
   }
 
 }

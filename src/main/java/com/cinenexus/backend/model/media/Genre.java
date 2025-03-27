@@ -19,7 +19,7 @@ public class Genre {
     private String name;
 
     @Column(unique = true, nullable = false)
-    private Long tmdbId; // ID اصلی TMDB
+    private Long tmdbId;
 
     public Genre(Long tmdbId, String name) {
         this.name = name;

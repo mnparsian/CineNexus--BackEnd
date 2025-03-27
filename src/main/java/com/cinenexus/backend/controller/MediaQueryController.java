@@ -1,6 +1,7 @@
 package com.cinenexus.backend.controller;
 
 import com.cinenexus.backend.model.media.Media;
+import com.cinenexus.backend.model.media.MediaGenre;
 import com.cinenexus.backend.service.MediaQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ public class MediaQueryController {
             @RequestParam Optional<String> title,
             @RequestParam Optional<String> category,
             @RequestParam Optional<String> mediaType,
+            @RequestParam Optional<List<MediaGenre>> mediaGenres,
             @RequestParam Optional<Double> minVoteAverage,
             @RequestParam Optional<Double> maxVoteAverage,
             @RequestParam Optional<LocalDate> releasedAfter,
@@ -31,7 +33,7 @@ public class MediaQueryController {
             Pageable pageable
     ) {
         return mediaQueryService.filterMedia(
-                title, category, mediaType, minVoteAverage, maxVoteAverage, releasedAfter, releasedBefore, pageable);
+                title, category, mediaType,mediaGenres, minVoteAverage, maxVoteAverage, releasedAfter, releasedBefore, pageable);
     }
 
     @GetMapping("/{id}")
@@ -57,6 +59,12 @@ public class MediaQueryController {
     public ResponseEntity<Page<Media>> getPopularMedia(@RequestParam(defaultValue = "0") int page,
                                                        @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(mediaQueryService.getMediaByPopularity(page, size));
+    }
+    @GetMapping("/genre/{genreId}")
+    public ResponseEntity<Page<Media>> getMediaByGenre(@PathVariable Long genreId,@RequestParam(defaultValue = "0") int page,
+                                                       @RequestParam(defaultValue = "20") int size) {
+        Page<Media> mediaList = mediaQueryService.getMediaByGenre(genreId,page,size);
+        return ResponseEntity.ok(mediaList);
     }
 }
 

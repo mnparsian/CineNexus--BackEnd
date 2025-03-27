@@ -29,10 +29,9 @@ public class Friendship {
 
     @ManyToOne
     @JoinColumn(name = "request_status_id", nullable = false)
-    private FriendRequestStatus requestStatus; // وضعیت درخواست دوستی (PENDING, ACCEPTED, REJECTED)
-
+    private FriendRequestStatus requestStatus;
     @ManyToOne
     @JoinColumn(name = "friendship_status_id", nullable = true)
-    private FriendshipStatus friendshipStatus; // وضعیت دوستی (ACCEPTED, BLOCKED)
+    private FriendshipStatus friendshipStatus;
 
 }

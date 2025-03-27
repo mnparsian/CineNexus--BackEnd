@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FriendshipRepository extends JpaRepository<Friendship,Long> {
@@ -17,6 +18,10 @@ public interface FriendshipRepository extends JpaRepository<Friendship,Long> {
     Page<Friendship> findAllByUserOrFriend(User user, User friend, Pageable pageable);
     @Query("SELECT f FROM Friendship f WHERE (f.user = :user1 AND f.friend = :user2) OR (f.user = :user2 AND f.friend = :user1)")
     Optional<Friendship> findByUsers(@Param("user1") User user1, @Param("user2") User user2);
+
+    public boolean existsByUserIdAndFriendId(Long userId,Long friendId);
+
+    List<Friendship> findAllByUser(User user);
 
 
 }
