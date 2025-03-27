@@ -258,7 +258,7 @@ public class TMDBService {
 
     public void fetchAndSaveAllMedia() {
 
-        final int MAX_ITEMS_PER_CATEGORY = 1000;
+        final int MAX_ITEMS_PER_CATEGORY = 500;
         int processedItemCount = 0;
 
         List<String> categories = List.of(
