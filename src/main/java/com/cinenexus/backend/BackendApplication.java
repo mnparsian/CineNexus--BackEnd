@@ -20,14 +20,15 @@ public class BackendApplication {
 		SpringApplication.run(BackendApplication.class, args);
 	}
 
-	@Bean
-	CommandLineRunner run(TMDBService tmdbService) {
-		return args -> {
-			System.out.println("⏳ Fetching and saving all media...");
-			tmdbService.fetchAndSaveAllMedia();
-			System.out.println("✅ Fetch and save completed!");
-		};
-	}
+//	@Bean
+//	CommandLineRunner run(TMDBService tmdbService) {
+//		return args -> {
+//			System.out.println("⏳ Fetching and saving all media...");
+//			tmdbService.fetchAndSaveAllMedia();
+//			System.out.println("✅ Fetch and save completed!");
+//		};
+//	}
+
 
 
 }
