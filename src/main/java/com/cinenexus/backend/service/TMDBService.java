@@ -258,12 +258,12 @@ public class TMDBService {
 
     public void fetchAndSaveAllMedia() {
 
-        final int MAX_ITEMS_PER_CATEGORY = 3000;
+        final int MAX_ITEMS_PER_CATEGORY = 1000;
         int processedItemCount = 0;
 
         List<String> categories = List.of(
-                "movie/upcoming", "tv/top_rated","tv/on_the_air","tv/popular", "tv/top_rated", "tv/airing_today",
-                "movie/popular", "movie/now_playing", "movie/top_rated"
+                "movie/popular","tv/popular", "movie/top_rated", "movie/upcoming", "tv/top_rated","tv/on_the_air", "tv/top_rated", "tv/airing_today",
+                 "movie/now_playing"
         );
 
         Set<String> processedCategories = new HashSet<>();
