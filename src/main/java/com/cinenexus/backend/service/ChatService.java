@@ -35,7 +35,7 @@ public class ChatService {
   private final ChatRequestRepository chatRequestRepository;
   private final UserChatRoomRepository userChatRoomRepository;
   private  final MessageMapper messageMapper;
-    private final SimpMessagingTemplate messagingTemplate;
+  private final SimpMessagingTemplate messagingTemplate;
 
   public ChatService(
       ChatRoomRepository chatRoomRepository,
