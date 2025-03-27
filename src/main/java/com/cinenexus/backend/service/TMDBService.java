@@ -257,6 +257,10 @@ public class TMDBService {
 //    }
 
     public void fetchAndSaveAllMedia() {
+
+        final int MAX_ITEMS_PER_CATEGORY = 3000;
+        int processedItemCount = 0;
+
         List<String> categories = List.of(
                 "movie/upcoming", "tv/top_rated","tv/on_the_air","tv/popular", "tv/top_rated", "tv/airing_today",
                 "movie/popular", "movie/now_playing", "movie/top_rated"
@@ -272,6 +276,12 @@ public class TMDBService {
 
             int page = 1;
             boolean hasMorePages = true;
+
+            if (mediaRepository.countByCategory(category) >= MAX_ITEMS_PER_CATEGORY) {
+                System.out.println("🟡 Skipping category (already has enough items): " + category);
+                continue;
+            }
+
 
             while (hasMorePages) {
                 try {
@@ -294,9 +304,15 @@ public class TMDBService {
                             if (media != null) {
                                 media.setCategory(category);
                                 mediaRepository.save(media);
+                                processedItemCount++;
+                                if (processedItemCount >= MAX_ITEMS_PER_CATEGORY) {
+                                    System.out.println("🔴 Max items reached for category: " + category);
+                                    break;
+                                }
                             }
                         }
                     }
+                    if (processedItemCount >= MAX_ITEMS_PER_CATEGORY) break;
 
 
                     int totalPages = response.has("total_pages") && response.get("total_pages").isInt()

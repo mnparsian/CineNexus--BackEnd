@@ -48,6 +48,8 @@ public interface MediaRepository extends JpaRepository<Media, Long>, JpaSpecific
             @Param("watchedMovies") List<Long> watchedMovies,
             Pageable pageable);
 
+    long countByCategory(String category);
+
 
 
 
