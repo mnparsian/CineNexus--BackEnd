@@ -30,8 +30,8 @@ public class PayPalController {
                     amount,
                     "EUR",
                     "CineNexus Subscription Payment",
-                    "http://localhost:5173/payment/failed",
-                    "http://localhost:5173/payment/success",
+                    "https://cinenexus-epicode.vercel.app/payment/failed",
+                    "https://cinenexus-epicode.vercel.app/payment/success",
                     userDetails
             );
             return ResponseEntity.ok(approvalUrl);
